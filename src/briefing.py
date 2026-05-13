@@ -119,3 +119,6 @@ def main():
     print(f"Wrote {OUT_FILE}")
     send_email(md)
 
+if __name__ == "__main__":
+    main()
+
