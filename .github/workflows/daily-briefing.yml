@@ -25,6 +25,11 @@ jobs:
       - name: Run briefing
         env:
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          EMAIL_HOST: ${{ secrets.EMAIL_HOST }}
+          EMAIL_PORT: ${{ secrets.EMAIL_PORT }}
+          EMAIL_ADDRESS: ${{ secrets.EMAIL_ADDRESS }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_RECIPIENTS: ${{ secrets.EMAIL_RECIPIENTS }}
         run: python src/briefing.py
 
       - name: Upload markdown artifact
