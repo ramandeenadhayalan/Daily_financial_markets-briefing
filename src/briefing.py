@@ -1,3 +1,38 @@
+import smtplib
+from email.message import EmailMessage
+
+def send_email(markdown_content):
+    host = os.getenv("EMAIL_HOST")
+    port = int(os.getenv("EMAIL_PORT", "465"))
+    sender = os.getenv("EMAIL_ADDRESS")
+    password = os.getenv("EMAIL_PASSWORD")
+    recipients = os.getenv("EMAIL_RECIPIENTS", "")
+
+    if not all([host, port, sender, password, recipients]):
+        print("Email settings not fully configured; skipping email send.")
+        return
+
+    recipient_list = [r.strip() for r in recipients.split(",") if r.strip()]
+
+    msg = EmailMessage()
+    msg["Subject"] = "Daily Macro Briefing"
+    msg["From"] = sender
+    msg["To"] = ", ".join(recipient_list)
+    msg.set_content(markdown_content)
+
+    with smtplib.SMTP_SSL(host, port) as smtp:
+        smtp.login(sender, password)
+        smtp.send_message(msg)
+
+    print("Email sent successfully.")
+
+def main():
+    items = fetch_market_news()
+    md = build_markdown(items)
+    OUT_FILE.write_text(md, encoding="utf-8")
+    print(f"Wrote {OUT_FILE}")
+    send_email(md)
+
 import os
 from datetime import datetime, timezone
 from pathlib import Path
