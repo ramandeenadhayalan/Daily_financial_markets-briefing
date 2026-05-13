@@ -89,14 +89,25 @@ def build_markdown(items):
 
 def send_email(markdown_content):
     host = os.getenv("EMAIL_HOST")
-    port = int(os.getenv("EMAIL_PORT", "465"))
+    port = os.getenv("EMAIL_PORT")
     sender = os.getenv("EMAIL_ADDRESS")
     password = os.getenv("EMAIL_PASSWORD")
     recipients = os.getenv("EMAIL_RECIPIENTS", "")
 
-    if not all([host, port, sender, password, recipients]):
-        print("Email settings not fully configured; skipping email send.")
-        return
+    missing = []
+    if not host:
+        missing.append("EMAIL_HOST")
+    if not port:
+        missing.append("EMAIL_PORT")
+    if not sender:
+        missing.append("EMAIL_ADDRESS")
+    if not password:
+        missing.append("EMAIL_PASSWORD")
+    if not recipients.strip():
+        missing.append("EMAIL_RECIPIENTS")
+
+    if missing:
+        raise ValueError(f"Missing required email environment variables: {', '.join(missing)}")
 
     recipient_list = [r.strip() for r in recipients.split(",") if r.strip()]
 
@@ -117,6 +128,8 @@ def main():
     md = build_markdown(items)
     OUT_FILE.write_text(md, encoding="utf-8")
     print(f"Wrote {OUT_FILE}")
+    print(f"Absolute path: {OUT_FILE.resolve()}")
+    print(f"File exists after write: {OUT_FILE.exists()}")
     send_email(md)
 
 if __name__ == "__main__":
