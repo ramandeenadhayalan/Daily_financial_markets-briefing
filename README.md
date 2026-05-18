@@ -1,4 +1,4 @@
-# Daily Macro Briefing Starter
+# Daily Financial News - Briefing 
 
 A simple Python + GitHub Actions starter project for generating a daily financial markets and geopolitical briefing news.
 
@@ -31,5 +31,5 @@ That is 07:00 UTC, which is 08:00 UK time during BST. In winter, if you want tru
 ## Next upgrades / Enhancements
 - Add indices, oil, FX, crypto and UK bond markets data.
 - Add better summarisation logic including 3 to 4 point summary from the website link.
-- Email or Teams/Slack delivery - Included Global Data Office team.
+- Email or Teams/Slack delivery - Included Global Data Office - DL delivery.
 - Persist daily archives.
