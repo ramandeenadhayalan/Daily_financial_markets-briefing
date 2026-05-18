@@ -16,7 +16,7 @@ OUT_DIR.mkdir(exist_ok=True)
 OUT_FILE = OUT_DIR / "daily_briefing.md"
 
 KEYWORDS_RISK_OFF = [
-    "iran", "war", "conflict", "sanctions", "oil", "hormuz", "inflation",
+    "Artificial Intelligence", "United Kingdom", "investment Management", "iran", "war", "conflict", "sanctions", "oil", "hormuz", "inflation",
     "tariff", "taiwan", "missile", "attack", "rates", "hawkish"
 ]
 KEYWORDS_RISK_ON = [
@@ -196,7 +196,7 @@ def build_html_email(items):
     return f"""
     <html>
       <body style="font-family: Arial, sans-serif; line-height: 1.5; color: #222;">
-        <h1 style="margin-bottom: 12px;">Daily Macro Briefing</h1>
+        <h1 style="margin-bottom: 12px;">Daily Financial Headlines Briefing</h1>
         <p><strong>Generated:</strong> {html.escape(now)}<br>
         <strong>Market tone:</strong> {html.escape(tone)}</p>
 
@@ -238,7 +238,7 @@ def send_email(markdown_content, html_content):
     recipient_list = [r.strip() for r in recipients.split(",") if r.strip()]
 
     msg = EmailMessage()
-    msg["Subject"] = "Daily Macro Briefing"
+    msg["Subject"] = "Global - Daily Financial News"
     msg["From"] = sender
     msg["To"] = ", ".join(recipient_list)
 
