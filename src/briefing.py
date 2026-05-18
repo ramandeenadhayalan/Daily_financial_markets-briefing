@@ -1,14 +1,11 @@
 import os
-import re
-import html
 import smtplib
+import html
 from datetime import datetime, timezone
 from pathlib import Path
 from email.message import EmailMessage
 
 import requests
-import nltk
-from newspaper import Article
 
 API_KEY = os.getenv("FINNHUB_API_KEY")
 if not API_KEY:
@@ -19,8 +16,8 @@ OUT_DIR.mkdir(exist_ok=True)
 OUT_FILE = OUT_DIR / "daily_briefing.md"
 
 KEYWORDS_RISK_OFF = [
-    "artificial intelligence", "investment management", "iran", "war", "conflict", "sanctions", "oil", "hormuz", "inflation",
-    "tariff", "taiwan", "missile", "attack", "rates", "hawkish", "gold"
+    "iran", "war", "conflict", "sanctions", "oil", "hormuz", "inflation",
+    "tariff", "taiwan", "missile", "attack", "rates", "hawkish"
 ]
 KEYWORDS_RISK_ON = [
     "soft landing", "rate cut", "cooling inflation", "stimulus", "deal",
@@ -31,12 +28,12 @@ CATEGORY_KEYWORDS = {
     "Macro & Central Banks": [
         "inflation", "cpi", "ppi", "rate", "rates", "fed", "ecb", "boe",
         "bank of england", "central bank", "yield", "recession", "growth",
-        "gdp", "jobs", "payrolls", "hawkish", "dovish", "disinflation", "gold" 
+        "gdp", "jobs", "payrolls", "hawkish", "dovish", "disinflation"
     ],
     "Geopolitics": [
         "iran", "israel", "gaza", "ukraine", "russia", "china", "taiwan",
         "war", "truce", "sanctions", "attack", "military", "missile",
-        "hormuz", "netanyahu", "trump", "white house", "india"
+        "hormuz", "netanyahu", "trump", "white house"
     ],
     "Energy & Commodities": [
         "oil", "brent", "crude", "gas", "lng", "opec", "refining",
@@ -56,28 +53,6 @@ CATEGORY_ORDER = [
     "Markets & Credit",
 ]
 
-NLTK_READY = False
-
-
-def ensure_nltk():
-    global NLTK_READY
-    if NLTK_READY:
-        return
-
-    resources = [
-        ("tokenizers/punkt", "punkt"),
-        ("corpora/stopwords", "stopwords"),
-    ]
-
-    for path_name, download_name in resources:
-        try:
-            nltk.data.find(path_name)
-        except LookupError:
-            nltk.download(download_name, quiet=True)
-
-    NLTK_READY = True
-
-
 def fetch_market_news(category: str = "general", limit: int = 12):
     url = "https://finnhub.io/api/v1/news"
     params = {"category": category, "token": API_KEY}
@@ -86,13 +61,11 @@ def fetch_market_news(category: str = "general", limit: int = 12):
     items = r.json()
     return items[:limit]
 
-
 def score_text(text: str):
     t = (text or "").lower()
     risk_off = sum(1 for k in KEYWORDS_RISK_OFF if k in t)
     risk_on = sum(1 for k in KEYWORDS_RISK_ON if k in t)
     return risk_off, risk_on
-
 
 def classify_tone(items):
     off = 0
@@ -108,7 +81,6 @@ def classify_tone(items):
         return "Risk-on"
     return "Neutral"
 
-
 def classify_category(item):
     text = f"{item.get('headline', '')} {item.get('summary', '')}".lower()
     best_category = "Markets & Credit"
@@ -122,6 +94,12 @@ def classify_category(item):
 
     return best_category
 
+def format_markdown_link(headline, url, source):
+    headline = (headline or "No headline").strip()
+    source = (source or "Unknown source").strip()
+    if url:
+        return f"- [{headline}]({url}) ({source})"
+    return f"- {headline} ({source})"
 
 def grouped_headlines(items, max_per_section=3):
     buckets = {category: [] for category in CATEGORY_ORDER}
@@ -142,89 +120,10 @@ def grouped_headlines(items, max_per_section=3):
 
     return buckets
 
-
-def split_summary_into_bullets(summary_text, max_bullets=3):
-    if not summary_text:
-        return []
-
-    parts = re.split(r'(?<=[.!?])\s+', summary_text.strip())
-    bullets = []
-
-    for part in parts:
-        cleaned = part.strip().replace("\n", " ")
-        if len(cleaned) < 40:
-            continue
-        bullets.append(cleaned)
-        if len(bullets) >= max_bullets:
-            break
-
-    return bullets
-
-
-def extract_article_bullets(url, max_bullets=3):
-    if not url:
-        return []
-
-    try:
-        ensure_nltk()
-        article = Article(url)
-        article.download()
-        article.parse()
-
-        if not article.text or len(article.text.strip()) < 300:
-            return []
-
-        try:
-            article.nlp()
-            summary_text = article.summary
-        except Exception:
-            summary_text = ""
-
-        bullets = split_summary_into_bullets(summary_text, max_bullets=max_bullets)
-
-        if bullets:
-            return bullets
-
-        fallback_sentences = split_summary_into_bullets(article.text, max_bullets=max_bullets)
-        return fallback_sentences
-
-    except Exception as exc:
-        print(f"Article extraction failed for {url}: {exc}")
-        return []
-
-
-def enrich_grouped_headlines(grouped_items):
-    enriched = {}
-
-    for category in CATEGORY_ORDER:
-        section_items = grouped_items.get(category, [])
-        enriched[category] = []
-
-        for idx, item in enumerate(section_items):
-            enriched_item = dict(item)
-            enriched_item["article_bullets"] = []
-
-            if idx == 0:
-                enriched_item["article_bullets"] = extract_article_bullets(item.get("url", ""))
-
-            enriched[category].append(enriched_item)
-
-    return enriched
-
-
-def format_markdown_link(headline, url, source):
-    headline = (headline or "No headline").strip()
-    source = (source or "Unknown source").strip()
-    if url:
-        return f"- [{headline}]({url}) ({source})"
-    return f"- {headline} ({source})"
-
-
 def build_markdown(items):
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     tone = classify_tone(items)
     grouped = grouped_headlines(items)
-    enriched = enrich_grouped_headlines(grouped)
 
     body = [
         "# Daily Macro Briefing",
@@ -237,7 +136,7 @@ def build_markdown(items):
     ]
 
     for category in CATEGORY_ORDER:
-        section_items = enriched.get(category, [])
+        section_items = grouped.get(category, [])
         if section_items:
             body.append(f"### {category}")
             for item in section_items:
@@ -248,64 +147,48 @@ def build_markdown(items):
                         item.get("source", "")
                     )
                 )
-
-                for bullet in item.get("article_bullets", []):
-                    body.append(f"  - {bullet}")
-
             body.append("")
 
     body.extend([
         "## Notes",
         "- This is a rules-based starter version using Finnhub market news.",
         "- Headlines are grouped into macro, geopolitics, energy, and markets sections for faster morning scanning.",
-        "- Top article in each section may include 1-3 extracted summary bullets when article parsing works.",
         "- Next step: add indices, oil, FX and UK gilts for a richer signal.",
     ])
 
     return "\n".join(body)
 
-
 def build_html_email(items):
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     tone = classify_tone(items)
     grouped = grouped_headlines(items)
-    enriched = enrich_grouped_headlines(grouped)
 
     sections_html = []
     for category in CATEGORY_ORDER:
-        section_items = enriched.get(category, [])
+        section_items = grouped.get(category, [])
         if not section_items:
             continue
 
-        bullets_html = []
+        bullets = []
         for item in section_items:
             headline = html.escape(item.get("headline", "No headline"))
             source = html.escape(item.get("source", "Unknown source"))
             url = item.get("url", "")
-            article_bullets = item.get("article_bullets", [])
-
             if url:
-                main_line = (
+                bullets.append(
                     f'<li><a href="{html.escape(url)}" target="_blank">{headline}</a> '
-                    f'<span style="color:#666;">({source})</span>'
+                    f'<span style="color:#666;">({source})</span></li>'
                 )
             else:
-                main_line = f'<li>{headline} <span style="color:#666;">({source})</span>'
-
-            if article_bullets:
-                nested = "".join(
-                    f"<li>{html.escape(point)}</li>" for point in article_bullets
+                bullets.append(
+                    f'<li>{headline} <span style="color:#666;">({source})</span></li>'
                 )
-                main_line += f'<ul style="margin-top:6px;">{nested}</ul>'
-
-            main_line += "</li>"
-            bullets_html.append(main_line)
 
         sections_html.append(
             f"""
             <h3 style="margin:18px 0 8px 0;">{html.escape(category)}</h3>
             <ul style="margin-top:6px; padding-left:20px;">
-                {''.join(bullets_html)}
+                {''.join(bullets)}
             </ul>
             """
         )
@@ -324,13 +207,11 @@ def build_html_email(items):
         <ul>
           <li>This is a rules-based starter version using Finnhub market news.</li>
           <li>Headlines are grouped into macro, geopolitics, energy, and markets sections for faster morning scanning.</li>
-          <li>Top article in each section may include 1-3 extracted summary bullets when article parsing works.</li>
           <li>Next step: add indices, oil, FX and UK gilts for a richer signal.</li>
         </ul>
       </body>
     </html>
     """
-
 
 def send_email(markdown_content, html_content):
     host = os.getenv("EMAIL_HOST")
@@ -370,7 +251,6 @@ def send_email(markdown_content, html_content):
 
     print("Email sent successfully.")
 
-
 def main():
     items = fetch_market_news()
     md = build_markdown(items)
@@ -378,7 +258,6 @@ def main():
     OUT_FILE.write_text(md, encoding="utf-8")
     print(f"Wrote {OUT_FILE}")
     send_email(md, html_email)
-
 
 if __name__ == "__main__":
     main()
