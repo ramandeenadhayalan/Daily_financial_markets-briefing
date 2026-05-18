@@ -33,7 +33,7 @@ CATEGORY_KEYWORDS = {
     "Geopolitics": [
         "iran", "israel", "gaza", "ukraine", "russia", "china", "taiwan",
         "war", "truce", "sanctions", "attack", "military", "missile",
-        "hormuz", "netanyahu", "trump", "white house"
+        "hormuz", "netanyahu", "trump", "white house", "gas", "india", "shipping"
     ],
     "Energy & Commodities": [
         "oil", "brent", "crude", "gas", "lng", "opec", "refining",
@@ -126,7 +126,7 @@ def build_markdown(items):
     grouped = grouped_headlines(items)
 
     body = [
-        "# Daily Macro Briefing",
+        "# Daily Macro Headlines - Briefing ",
         "",
         f"Generated: {now}",
         f"Market tone: **{tone}**",
