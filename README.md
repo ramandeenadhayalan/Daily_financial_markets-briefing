@@ -1,4 +1,4 @@
-# Daily Financial News - Briefing 
+# Daily Macro / Financial News - Briefing workflow
 
 A simple Python + GitHub Actions starter project for generating a daily financial markets and geopolitical briefing news.
 
